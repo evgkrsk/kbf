@@ -1,0 +1,32 @@
+version: '2'
+
+services:
+  db:
+    image: postgres:11
+    command: -c fsync=off -c full_page_writes=off
+    environment:
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 1s
+      timeout: 1s
+      retries: 60
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # logging:
+    #   driver: none
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

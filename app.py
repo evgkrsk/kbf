@@ -48,20 +48,27 @@ if __name__ == "__main__":
         with conn.cursor() as cursor:
             app = Flask(__name__)
             cursor.execute(
-                "CREATE TABLE posts (id serial PRIMARY KEY, data varchar) IF NOT EXIST;"
+                "CREATE TABLE IF NOT EXISTS posts (id serial PRIMARY KEY, data varchar);"
             )
+            conn.commit()
 
             @app.route("/post", methods=["POST"])
             def post():
                 cursor.execute(
                     "INSERT INTO posts (data) VALUES (%s)", (
-                        request.form["data"])
+                        request.form["data"],)
                 )
+                conn.commit()
                 return request.form["data"]
 
             @app.route("/get")
             def get():
                 cursor.execute("SELECT * FROM posts")
+                conn.commit()
                 return "\n".join(map(str, cursor.fetchall()))
 
-            app.run("0.0.0.0:5000")
+            @app.route("/")
+            def index():
+                return "OK"
+
+            app.run(host="0.0.0.0", port=5000)
