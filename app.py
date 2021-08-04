@@ -42,15 +42,26 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    conn = psycopg2.connect(
+    with psycopg2.connect(
         dbname=args.db, user=args.user, password=args.passwd, host=args.host
-    )
-    cursor = conn.cursor()
+    ) as conn:
+        with conn.cursor() as cursor:
+            app = Flask(__name__)
+            cursor.execute(
+                "CREATE TABLE posts (id serial PRIMARY KEY, data varchar) IF NOT EXIST;"
+            )
 
-    app = Flask(__name__)
+            @app.route("/post", methods=["POST"])
+            def post():
+                cursor.execute(
+                    "INSERT INTO posts (data) VALUES (%s)", (
+                        request.form["data"])
+                )
+                return request.form["data"]
 
-    @app.route("/post", methods=["POST"])
-    def post():
-        pass
+            @app.route("/get")
+            def get():
+                cursor.execute("SELECT * FROM posts")
+                return "\n".join(map(str, cursor.fetchall()))
 
-    app.run("0.0.0.0:5000")
+            app.run("0.0.0.0:5000")
